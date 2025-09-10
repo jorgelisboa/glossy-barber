@@ -1,10 +1,23 @@
-// app/page.tsx
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Scissors, CalendarDays, DollarSign, Cloud, Laptop, BarChartBig } from "lucide-react";
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       
@@ -12,12 +25,23 @@ export default function LandingPage() {
       <header className="container mx-auto px-4 py-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-primary">[Nome do seu App]</h1>
         <div className="flex items-center gap-2">
-                    <Link href="/login">
-            <Button variant="ghost">Entrar</Button>
-          </Link>
-                    <Link href="/signup">
-            <Button>Criar Conta Grátis</Button>
-          </Link>
+          {loading ? (
+            <div>Loading...</div>
+          ) : user ? (
+            <>
+              <p>{user.email}</p>
+              <Button variant="ghost" onClick={handleLogout}>Sair</Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost">Entrar</Button>
+              </Link>
+              <Link href="/signup">
+                <Button>Criar Conta Grátis</Button>
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
