@@ -29,7 +29,7 @@ import { useTranslation } from 'next-i18next';
 
 const DashboardPage = () => {
   const { t } = useTranslation('common');
-  const { user, loading } = useAuth();
+  const { user,  } = useAuth();
   const [dailyRevenue, setDailyRevenue] = useState(0);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [dailyAppointmentsCount, setDailyAppointmentsCount] = useState(0);

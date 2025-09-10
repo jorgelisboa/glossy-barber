@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckoutButton } from "@/components/ui/CheckoutButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { Check, Scissors, CalendarDays, DollarSign, Cloud, Laptop, BarChartBig, MessageSquareText, CreditCard, TrendingDown, Repeat, Globe } from "lucide-react";
+import { Check, Scissors, CalendarDays, Cloud, Laptop, BarChartBig, MessageSquareText, CreditCard, TrendingDown, Repeat, Globe } from "lucide-react";
 
 import Link from 'next/link';
 import Header from '@/components/Header';
