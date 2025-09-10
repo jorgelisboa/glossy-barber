@@ -1,14 +1,45 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
+import { CheckoutButton } from "@/components/ui/CheckoutButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Scissors, CalendarDays, DollarSign, Cloud, Laptop, BarChartBig } from "lucide-react";
+
+import { Check, Scissors, CalendarDays, DollarSign, Cloud, Laptop, BarChartBig, MessageSquareText, CreditCard, TrendingDown, Repeat, Globe } from "lucide-react";
+
 import Link from 'next/link';
 import Header from '@/components/Header';
+
 
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
+      
+      {/* Cabeçalho */}
+      <header className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-primary">Glossy</h1>
+        <div className="flex items-center gap-2">
+          {loading ? (
+            <div>Loading...</div>
+          ) : user ? (
+            <>
+              <p>{user.email}</p>
+              <Link href="/dashboard">
+                <Button variant="ghost">Dashboard</Button>
+              </Link>
+              <Button variant="ghost" onClick={handleLogout}>Sair</Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost">Entrar</Button>
+              </Link>
+              <Link href="/signup">
+                <Button>Criar Conta Grátis</Button>
+              </Link>
+            </>
+          )}
+        </div>
+      </header>
       <Header />
 
       <main className="flex-grow">
@@ -166,9 +197,80 @@ export default function LandingPage() {
                     <span>Backup automático e seguro</span>
                   </li>
                 </ul>
-                <Button className="w-full mt-auto">Assinar o Plano Nuvem</Button>
+                <CheckoutButton />
               </CardContent>
             </Card>
+          </div>
+        </section>
+
+        {/* Seção 4: Em Breve na Nuvem */}
+        <section id="em-breve" className="bg-muted py-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+                <h3 className="text-3xl md:text-4xl font-bold">
+                O Futuro da Sua Barbearia Está na Nuvem
+                </h3>
+                <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
+                Estamos trabalhando para trazer ainda mais poder para o Plano Nuvem. Prepare-se para as novidades que chegarão no próximo mês:
+                </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              <Card>
+                <CardHeader className="flex flex-col items-center text-center">
+                    <div className="bg-primary/10 p-3 rounded-full mb-4">
+                        <MessageSquareText className="h-8 w-8 text-primary" />
+                    </div>
+                  <CardTitle>Lembretes via WhatsApp</CardTitle>
+                  <CardDescription>
+                    Reduza as faltas com lembretes automáticos de agendamento enviados diretamente para o WhatsApp dos seus clientes.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-col items-center text-center">
+                    <div className="bg-primary/10 p-3 rounded-full mb-4">
+                        <CreditCard className="h-8 w-8 text-primary" />
+                    </div>
+                  <CardTitle>Pagamentos Integrados</CardTitle>
+                  <CardDescription>
+                    Receba pagamentos com Cartão de Crédito e Pix diretamente pela plataforma. Mais agilidade para você e seus clientes.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-col items-center text-center">
+                    <div className="bg-primary/10 p-3 rounded-full mb-4">
+                        <TrendingDown className="h-8 w-8 text-primary" />
+                    </div>
+                  <CardTitle>Controle de Despesas</CardTitle>
+                  <CardDescription>
+                    Lance suas contas a pagar e despesas para ter uma visão completa da saúde financeira do seu negócio.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-col items-center text-center">
+                    <div className="bg-primary/10 p-3 rounded-full mb-4">
+                        <Repeat className="h-8 w-8 text-primary" />
+                    </div>
+                  <CardTitle>Tela de Movimentação</CardTitle>
+                  <CardDescription>
+                    Acompanhe todas as entradas e saídas em um único lugar, de forma clara e organizada.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-col items-center text-center">
+                    <div className="bg-primary/10 p-3 rounded-full mb-4">
+                        <Globe className="h-8 w-8 text-primary" />
+                    </div>
+                  <CardTitle>Página de Agendamento</CardTitle>
+                  <CardDescription>
+                    Seus clientes poderão agendar horários diretamente através de um link público e personalizado para sua barbearia.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
           </div>
         </section>
       </main>
