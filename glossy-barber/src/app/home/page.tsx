@@ -30,6 +30,9 @@ export default function LandingPage() {
           ) : user ? (
             <>
               <p>{user.email}</p>
+              <Link href="/dashboard">
+                <Button variant="ghost">Dashboard</Button>
+              </Link>
               <Button variant="ghost" onClick={handleLogout}>Sair</Button>
             </>
           ) : (

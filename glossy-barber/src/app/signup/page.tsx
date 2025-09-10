@@ -41,7 +41,7 @@ export default function SignupPage() {
   const onSubmit = async (values) => {
     const { user, error } = await signupWithEmail(values.email, values.password, values.username, values.barbershopSize, values.plan);
     if (user) {
-      router.push('/home'); // Redirect to a dashboard or home page after signup
+      router.push('/dashboard'); // Redirect to dashboard after signup
     } else {
       console.error(error);
       // Handle error (e.g., show a toast message)

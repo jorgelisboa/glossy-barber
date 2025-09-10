@@ -29,7 +29,7 @@ export default function LoginPage() {
   const onSubmit = async (values) => {
     const { user, error } = await loginWithEmail(values.email, values.password);
     if (user) {
-      router.push('/home'); // Redirect to a dashboard or home page after login
+      router.push('/dashboard'); // Redirect to dashboard after login
     } else {
       console.error(error);
       // Handle error (e.g., show a toast message)
