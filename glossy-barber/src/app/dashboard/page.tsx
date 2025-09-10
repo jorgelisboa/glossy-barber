@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { CalendarDays, DollarSign } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getAppointments, createAppointment, deleteAppointment, updateAppointment } from '@/lib/appointments';
+import { getAppointments, createAppointment, deleteAppointment, updateAppointment, updateAppointmentStatus } from '@/lib/appointments';
 import { getServices, createService, deleteService, updateService } from '@/lib/services';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,26 @@ const DashboardPage = () => {
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [isServiceEditDialogOpen, setIsServiceEditDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
+
+  const handleCompleteService = async (service) => {
+    if (!user) return;
+
+    const appointmentData = {
+      serviceId: service.id,
+      dateTime: new Date(),
+      clientName: "Cliente",
+      clientPhone: "",
+      status: 'completed',
+    };
+
+    const { error } = await createAppointment(user.uid, appointmentData);
+
+    if (error) {
+      console.error('Error completing service:', error);
+    } else {
+      fetchDashboardData();
+    }
+  };
 
   const onSubmitUpdateService = async () => {
     if (!user || !editingService) return;
@@ -139,7 +159,8 @@ const DashboardPage = () => {
       const apptDate = new Date(appt.dateTime.seconds * 1000); // Assuming dateTime is a Firestore Timestamp
       const service = fetchedServices.find(s => s.id === appt.serviceId);
 
-      if (service) {
+      // Only count completed appointments towards revenue
+      if (service && appt.status === 'completed') {
         if (apptDate >= startOfDay) {
           currentDailyRevenue += service.price;
           currentDailyAppointmentsCount++;
@@ -198,6 +219,16 @@ const DashboardPage = () => {
     const { error } = await deleteAppointment(appointmentId);
     if (error) {
       console.error('Error deleting appointment:', error);
+    } else {
+      fetchDashboardData(); // Refresh data
+    }
+  };
+
+  const handleMarkAsCompleted = async (appointmentId) => {
+    if (!user) return;
+    const { error } = await updateAppointmentStatus(appointmentId, 'completed');
+    if (error) {
+      console.error('Error marking appointment as completed:', error);
     } else {
       fetchDashboardData(); // Refresh data
     }
@@ -386,10 +417,13 @@ const DashboardPage = () => {
                     <CardContent className="p-4 flex justify-between items-center">
                       <div>
                         <p className="font-semibold">{appt.clientName}</p>
-                        <p className="text-sm text-muted-foreground">{new Date(appt.dateTime.seconds * 1000).toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">{new Date(appt.dateTime.seconds * 1000).toLocaleString()} ({appt.status})</p>
                         {/* You might want to display service name here as well */}
                       </div>
                       <div className="flex gap-2">
+                        {appt.status !== 'completed' && (
+                          <Button variant="outline" size="sm" onClick={() => handleMarkAsCompleted(appt.id)}>{t('mark_as_completed_button')}</Button>
+                        )}
                         <Button variant="outline" size="sm" onClick={() => handleOpenEditDialog(appt)}>{t('edit_button')}</Button>
                         <Button variant="destructive" size="sm" onClick={() => handleDeleteAppointment(appt.id)}>{t('delete_button')}</Button>
                       </div>
@@ -540,6 +574,7 @@ const DashboardPage = () => {
                     <p className="text-sm text-muted-foreground">R$ {service.price.toFixed(2)} - {service.time} min</p>
                   </div>
                   <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleCompleteService(service)}>{t('complete_button')}</Button>
                     <Button variant="outline" size="sm" onClick={() => handleOpenServiceEditDialog(service)}>{t('edit_button')}</Button>
                     <Button variant="destructive" size="sm" onClick={() => handleDeleteService(service.id)}>{t('delete_button')}</Button>
                   </div>

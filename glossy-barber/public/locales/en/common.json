@@ -120,5 +120,6 @@
   "save_changes_button": "Save Changes",
   "edit_service_title": "Edit Service",
   "services_title": "Services",
-  "no_services_found": "No services found."
+  "no_services_found": "No services found.",
+  "complete_button": "Complete"
 }

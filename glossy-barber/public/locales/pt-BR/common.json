@@ -121,5 +121,6 @@
   "save_changes_button": "Salvar Alterações",
   "edit_service_title": "Editar Serviço",
   "services_title": "Serviços",
-  "no_services_found": "Nenhum serviço encontrado."
+  "no_services_found": "Nenhum serviço encontrado.",
+  "complete_button": "Finalizar"
 }

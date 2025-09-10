@@ -9,6 +9,7 @@ export const createAppointment = async (userId, appointmentData) => {
   try {
     const docRef = await addDoc(appointmentsCollection, {
       userId,
+      status: 'pending', // Default status for new appointments
       ...appointmentData,
     });
     return { id: docRef.id };
@@ -37,6 +38,17 @@ export const updateAppointment = async (appointmentId, appointmentData) => {
   try {
     const appointmentDoc = doc(db, 'appointments', appointmentId);
     await updateDoc(appointmentDoc, appointmentData);
+    return { success: true };
+  } catch (error) {
+    return { error };
+  }
+};
+
+// Update Status
+export const updateAppointmentStatus = async (appointmentId, newStatus) => {
+  try {
+    const appointmentDoc = doc(db, 'appointments', appointmentId);
+    await updateDoc(appointmentDoc, { status: newStatus });
     return { success: true };
   } catch (error) {
     return { error };
