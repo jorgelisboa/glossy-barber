@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Scissors, CalendarDays, DollarSign, Cloud, Laptop, BarChartBig } from "lucide-react";
+import Link from 'next/link';
 
 export default function LandingPage() {
   return (
@@ -11,8 +12,12 @@ export default function LandingPage() {
       <header className="container mx-auto px-4 py-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-primary">[Nome do seu App]</h1>
         <div className="flex items-center gap-2">
-          <Button variant="ghost">Entrar</Button>
-          <Button>Criar Conta Grátis</Button>
+                    <Link href="/login">
+            <Button variant="ghost">Entrar</Button>
+          </Link>
+                    <Link href="/signup">
+            <Button>Criar Conta Grátis</Button>
+          </Link>
         </div>
       </header>
 
