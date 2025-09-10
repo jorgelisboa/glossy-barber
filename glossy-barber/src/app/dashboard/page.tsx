@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { CalendarDays, DollarSign } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getAppointments, createAppointment } from '@/lib/appointments';
-import { getServices } from '@/lib/services';
+import { getAppointments, createAppointment, deleteAppointment, updateAppointment } from '@/lib/appointments';
+import { getServices, createService, deleteService, updateService } from '@/lib/services';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,15 +16,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-const appointmentFormSchema = z.object({
-  serviceId: z.string().min(1, 'Selecione um serviço'),
-  date: z.string().min(1, 'Selecione uma data'),
-  time: z.string().min(1, 'Selecione um horário'),
-  clientName: z.string().min(1, 'Nome do cliente é obrigatório'),
-  clientPhone: z.string().min(1, 'Telefone do cliente é obrigatório'),
+const getAppointmentFormSchema = (t: (key: string) => string) => z.object({
+  serviceId: z.string().min(1, t('select_service_error')),
+  date: z.string().min(1, t('select_date_error')),
+  time: z.string().min(1, t('select_time_error')),
+  clientName: z.string().min(1, t('client_name_error')),
+  clientPhone: z.string().min(1, t('client_phone_error')),
 });
 
-export default function DashboardPage() {
+import { useTranslation } from 'next-i18next';
+
+const DashboardPage = () => {
+  const { t } = useTranslation('common');
   const { user, loading } = useAuth();
   const [dailyRevenue, setDailyRevenue] = useState(0);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
@@ -37,23 +40,65 @@ export default function DashboardPage() {
   const [servicePrice, setServicePrice] = useState("");
   const [serviceTime, setServiceTime] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState(null);
+  const [isServiceEditDialogOpen, setIsServiceEditDialogOpen] = useState(false);
+  const [editingService, setEditingService] = useState(null);
 
-  const handleAddService = () => {
-    // Here you would handle the logic to add the service
-    console.log({
-      serviceName,
-      servicePrice,
-      serviceTime,
-      paymentMethod,
-    });
-    // Close the dialog after submission
-    setIsServiceDialogOpen(false);
-    // Optionally reset form fields
-    setServiceName("");
-    setServicePrice("");
-    setServiceTime("");
-    setPaymentMethod(null);
+  const onSubmitUpdateService = async () => {
+    if (!user || !editingService) return;
+
+    const serviceData = {
+      name: serviceName,
+      price: parseFloat(servicePrice),
+      time: parseInt(serviceTime),
+      paymentMethod: paymentMethod,
+    };
+
+    const { error } = await updateService(editingService.id, serviceData);
+
+    if (error) {
+      console.error('Error updating service:', error);
+    } else {
+      setIsServiceEditDialogOpen(false);
+      setEditingService(null);
+      // Reset form fields
+      setServiceName("");
+      setServicePrice("");
+      setServiceTime("");
+      setPaymentMethod(null);
+      fetchDashboardData();
+    }
   };
+
+  const handleAddService = async () => {
+    if (!user) return;
+
+    const serviceData = {
+      name: serviceName,
+      price: parseFloat(servicePrice),
+      time: parseInt(serviceTime),
+      paymentMethod: paymentMethod,
+    };
+
+    const { error } = await createService(user.uid, serviceData);
+
+    if (error) {
+      console.error('Error creating service:', error);
+      // Handle error
+    } else {
+      // Close the dialog after submission
+      setIsServiceDialogOpen(false);
+      // Optionally reset form fields
+      setServiceName("");
+      setServicePrice("");
+      setServiceTime("");
+      setPaymentMethod(null);
+      fetchDashboardData(); // Refresh data
+    }
+  };
+
+  const appointmentFormSchema = getAppointmentFormSchema(t);
 
   const form = useForm({
     resolver: zodResolver(appointmentFormSchema),
@@ -116,6 +161,72 @@ export default function DashboardPage() {
     }
   }, [user]);
 
+  const handleOpenServiceEditDialog = (service) => {
+    setEditingService(service);
+    setServiceName(service.name);
+    setServicePrice(service.price.toString());
+    setServiceTime(service.time.toString());
+    setPaymentMethod(service.paymentMethod);
+    setIsServiceEditDialogOpen(true);
+  };
+
+  const handleDeleteService = async (serviceId) => {
+    if (!user) return;
+    const { error } = await deleteService(serviceId);
+    if (error) {
+      console.error('Error deleting service:', error);
+    } else {
+      fetchDashboardData(); // Refresh data
+    }
+  };
+
+  const handleOpenEditDialog = (appointment) => {
+    setEditingAppointment(appointment);
+    const apptDate = new Date(appointment.dateTime.seconds * 1000);
+    form.reset({
+      serviceId: appointment.serviceId,
+      date: apptDate.toISOString().split('T')[0],
+      time: apptDate.toTimeString().split(' ')[0].substring(0, 5),
+      clientName: appointment.clientName,
+      clientPhone: appointment.clientPhone,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteAppointment = async (appointmentId) => {
+    if (!user) return;
+    const { error } = await deleteAppointment(appointmentId);
+    if (error) {
+      console.error('Error deleting appointment:', error);
+    } else {
+      fetchDashboardData(); // Refresh data
+    }
+  };
+
+  const onSubmitUpdateAppointment = async (values) => {
+    if (!user || !editingAppointment) return;
+
+    const [year, month, day] = values.date.split('-').map(Number);
+    const [hours, minutes] = values.time.split(':').map(Number);
+    const dateTime = new Date(year, month - 1, day, hours, minutes);
+
+    const { error } = await updateAppointment(editingAppointment.id, {
+      serviceId: values.serviceId,
+      dateTime: dateTime,
+      clientName: values.clientName,
+      clientPhone: values.clientPhone,
+    });
+
+    if (error) {
+      console.error('Error updating appointment:', error);
+    } else {
+      form.reset();
+      setIsEditDialogOpen(false);
+      setEditingAppointment(null);
+      fetchDashboardData();
+    }
+  };
+
   const onSubmitAppointment = async (values) => {
     if (!user) return;
 
@@ -143,22 +254,32 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Dashboard da Barbearia</h1>
-        <Dialog open={isServiceDialogOpen} onOpenChange={setIsServiceDialogOpen}>
+        <h1 className="text-3xl font-bold">{t('barbershop_dashboard_title')}</h1>
+        <Dialog open={isServiceDialogOpen || isServiceEditDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            setIsServiceDialogOpen(false);
+            setIsServiceEditDialogOpen(false);
+            setEditingService(null);
+            setServiceName("");
+            setServicePrice("");
+            setServiceTime("");
+            setPaymentMethod(null);
+          }
+        }}>
           <DialogTrigger asChild>
-            <Button>Adicionar Serviço</Button>
+            <Button onClick={() => setIsServiceDialogOpen(true)}>{t('add_service_button')}</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Adicionar Novo Serviço</DialogTitle>
+              <DialogTitle>{editingService ? t('edit_service_title') : t('add_new_service_title')}</DialogTitle>
               <DialogDescription>
-                Preencha os detalhes do novo serviço.
+                {t('fill_service_details')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="serviceName" className="text-right">
-                  Nome
+                  {t('service_name')}
                 </Label>
                 <Input
                   id="serviceName"
@@ -169,7 +290,7 @@ export default function DashboardPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="servicePrice" className="text-right">
-                  Preço
+                  {t('service_price')}
                 </Label>
                 <Input
                   id="servicePrice"
@@ -181,7 +302,7 @@ export default function DashboardPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="serviceTime" className="text-right">
-                  Tempo (min)
+                  {t('service_time')}
                 </Label>
                 <Input
                   id="serviceTime"
@@ -193,24 +314,24 @@ export default function DashboardPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="paymentMethod" className="text-right">
-                  Método de Pagamento
+                  {t('payment_method')}
                 </Label>
                 <Select onValueChange={(value) => setPaymentMethod(value)} value={paymentMethod || ""}>
                   <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecione um método" />
+                    <SelectValue placeholder={t('select_method_placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                    <SelectItem value="debit_card">Cartão de Débito</SelectItem>
-                    <SelectItem value="cash">Dinheiro</SelectItem>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="none">Nenhum (Opcional)</SelectItem>
+                    <SelectItem value="credit_card">{t('credit_card')}</SelectItem>
+                    <SelectItem value="debit_card">{t('debit_card')}</SelectItem>
+                    <SelectItem value="cash">{t('cash')}</SelectItem>
+                    <SelectItem value="pix">{t('pix')}</SelectItem>
+                    <SelectItem value="none">{t('none_optional')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="flex justify-end">
-              <Button onClick={handleAddService}>Salvar Serviço</Button>
+              <Button onClick={editingService ? onSubmitUpdateService : handleAddService}>{editingService ? t('save_changes_button') : t('save_service')}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -220,32 +341,32 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento do Dia</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('daily_revenue')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">R$ {dailyRevenue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Baseado nos agendamentos do dia</p>
+            <p className="text-xs text-muted-foreground">{t('based_on_daily_appointments')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento do Mês</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('monthly_revenue')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">R$ {monthlyRevenue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Baseado nos agendamentos do mês</p>
+            <p className="text-xs text-muted-foreground">{t('based_on_monthly_appointments')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Agendamentos Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('appointments_today')}</CardTitle>
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{dailyAppointmentsCount}</div>
-            <p className="text-xs text-muted-foreground">Agendamentos confirmados para hoje</p>
+            <p className="text-xs text-muted-foreground">{t('confirmed_appointments_today')}</p>
           </CardContent>
         </Card>
       </div>
@@ -253,19 +374,25 @@ export default function DashboardPage() {
       {/* Seção de Agendamentos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <h2 className="text-2xl font-bold mb-4">Próximos Agendamentos</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('upcoming_appointments')}</h2>
           <div className="space-y-4">
             {appointments.length === 0 ? (
-              <p className="text-muted-foreground">Nenhum agendamento encontrado.</p>
+              <p className="text-muted-foreground">{t('no_appointments_found')}</p>
             ) : (
               appointments
                 .sort((a, b) => a.dateTime.seconds - b.dateTime.seconds) // Sort by nearest time
                 .map(appt => (
                   <Card key={appt.id}>
-                    <CardContent className="p-4">
-                      <p className="font-semibold">{appt.clientName}</p>
-                      <p className="text-sm text-muted-foreground">{new Date(appt.dateTime.seconds * 1000).toLocaleString()}</p>
-                      {/* You might want to display service name here as well */}
+                    <CardContent className="p-4 flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">{appt.clientName}</p>
+                        <p className="text-sm text-muted-foreground">{new Date(appt.dateTime.seconds * 1000).toLocaleString()}</p>
+                        {/* You might want to display service name here as well */}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenEditDialog(appt)}>{t('edit_button')}</Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteAppointment(appt.id)}>{t('delete_button')}</Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))
@@ -274,21 +401,21 @@ export default function DashboardPage() {
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold mb-4">Adicionar Novo Agendamento</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('add_new_appointment_title')}</h2>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>+ Adicionar Agendamento</Button>
+              <Button>+ {t('add_appointment_button')}</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Criar Novo Agendamento</DialogTitle>
+                <DialogTitle>{t('create_new_appointment_title')}</DialogTitle>
               </DialogHeader>
               <form onSubmit={form.handleSubmit(onSubmitAppointment)} className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="serviceId">Serviço</label>
+                  <label htmlFor="serviceId">{t('service')}</label>
                   <Select onValueChange={(value) => form.setValue('serviceId', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um serviço" />
+                      <SelectValue placeholder={t('select_service_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {services.map(service => (
@@ -301,31 +428,129 @@ export default function DashboardPage() {
                   {form.formState.errors.serviceId && <p className="text-red-500 text-xs">{form.formState.errors.serviceId.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="date">Data</label>
-                  <Input id="date" type="date" {...form.register('date')} />
+                  <label htmlFor="date">{t('date')}</label>
+                  <Input
+                    id="date"
+                    type="date"
+                    {...form.register('date')}
+                    value={form.watch('date')}
+                    onChange={(e) => form.setValue('date', e.target.value)}
+                  />
                   {form.formState.errors.date && <p className="text-red-500 text-xs">{form.formState.errors.date.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="time">Hora</label>
-                  <Input id="time" type="time" {...form.register('time')} />
+                  <label htmlFor="time">{t('time')}</label>
+                  <Input
+                    id="time"
+                    type="time"
+                    {...form.register('time')}
+                    value={form.watch('time')}
+                    onChange={(e) => form.setValue('time', e.target.value)}
+                  />
                   {form.formState.errors.time && <p className="text-red-500 text-xs">{form.formState.errors.time.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="clientName">Nome do Cliente</label>
-                  <Input id="clientName" type="text" placeholder="Nome do Cliente" {...form.register('clientName')} />
+                  <label htmlFor="clientName">{t('client_name')}</label>
+                  <Input id="clientName" type="text" placeholder={t('client_name_placeholder')} {...form.register('clientName')} />
                   {form.formState.errors.clientName && <p className="text-red-500 text-xs">{form.formState.errors.clientName.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="clientPhone">Telefone do Cliente</label>
-                  <Input id="clientPhone" type="tel" placeholder="(XX) XXXXX-XXXX" {...form.register('clientPhone')} />
+                  <label htmlFor="clientPhone">{t('client_phone')}</label>
+                  <Input id="clientPhone" type="tel" placeholder={t('client_phone_placeholder')} {...form.register('clientPhone')} />
                   {form.formState.errors.clientPhone && <p className="text-red-500 text-xs">{form.formState.errors.clientPhone.message}</p>}
                 </div>
-                <Button type="submit" className="w-full">Agendar</Button>
+                <Button type="submit" className="w-full">{t('schedule_button')}</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t('edit_appointment_title')}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={form.handleSubmit(onSubmitUpdateAppointment)} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="serviceId">{t('service')}</label>
+                  <Select onValueChange={(value) => form.setValue('serviceId', value)} defaultValue={editingAppointment?.serviceId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('select_service_placeholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services.map(service => (
+                        <SelectItem key={service.id} value={service.id}>
+                          {service.name} - R$ {service.price.toFixed(2)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.serviceId && <p className="text-red-500 text-xs">{form.formState.errors.serviceId.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="date">{t('date')}</label>
+                  <Input
+                    id="date"
+                    type="date"
+                    {...form.register('date')}
+                    value={form.watch('date')}
+                    onChange={(e) => form.setValue('date', e.target.value)}
+                  />
+                  {form.formState.errors.date && <p className="text-red-500 text-xs">{form.formState.errors.date.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="time">{t('time')}</label>
+                  <Input
+                    id="time"
+                    type="time"
+                    {...form.register('time')}
+                    value={form.watch('time')}
+                    onChange={(e) => form.setValue('time', e.target.value)}
+                  />
+                  {form.formState.errors.time && <p className="text-red-500 text-xs">{form.formState.errors.time.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="clientName">{t('client_name')}</label>
+                  <Input id="clientName" type="text" placeholder={t('client_name_placeholder')} {...form.register('clientName')} />
+                  {form.formState.errors.clientName && <p className="text-red-500 text-xs">{form.formState.errors.clientName.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="clientPhone">{t('client_phone')}</label>
+                  <Input id="clientPhone" type="tel" placeholder={t('client_phone_placeholder')} {...form.register('clientPhone')} />
+                  {form.formState.errors.clientPhone && <p className="text-red-500 text-xs">{form.formState.errors.clientPhone.message}</p>}
+                </div>
+                <Button type="submit" className="w-full">{t('save_changes_button')}</Button>
               </form>
             </DialogContent>
           </Dialog>
         </div>
       </div>
+
+      {/* Seção de Serviços */}
+      <div>
+        <h2 className="text-2xl font-bold mb-4">{t('services_title')}</h2>
+        <div className="space-y-4">
+          {services.length === 0 ? (
+            <p className="text-muted-foreground">{t('no_services_found')}</p>
+          ) : (
+            services.map(service => (
+              <Card key={service.id}>
+                <CardContent className="p-4 flex justify-between items-center">
+                  <div>
+                    <p className="font-semibold">{service.name}</p>
+                    <p className="text-sm text-muted-foreground">R$ {service.price.toFixed(2)} - {service.time} min</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleOpenServiceEditDialog(service)}>{t('edit_button')}</Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteService(service.id)}>{t('delete_button')}</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
+
+export default DashboardPage;
