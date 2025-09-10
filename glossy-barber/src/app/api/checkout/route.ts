@@ -1,36 +1,31 @@
-import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
-
-const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+import {NextResponse} from "next/server";
+import {stripe} from "@/lib/stripe";
 
 export async function POST(req: Request) {
-  const { userId } = await req.json();
+  const {priceId, quantity = 1} = await req.json();
 
-  if (!userId) {
-    return new NextResponse('User ID not found', { status: 400 });
+  if (!priceId) {
+    return new NextResponse("Price ID is required", {status: 400});
   }
 
   try {
-    const checkoutSession = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID,
-          quantity: 1,
+          price: priceId,
+          quantity,
         },
       ],
-      // Adicionamos o ID do usuário nos metadados da sessão
-      metadata: {
-        userId: userId,
-      },
-      success_url: `${appUrl}/?payment=success`,
-      cancel_url: `${appUrl}/?payment=cancelled`,
+      mode: "payment",
+      success_url: `${req.headers.get("origin")}/home`,
+      cancel_url: `${req.headers.get("origin")}/home`,
     });
 
-    return NextResponse.json({ sessionId: checkoutSession.id });
-  } catch (error) {
-    console.error('Error creating Stripe checkout session:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return NextResponse.json({sessionId: session.id});
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }
+

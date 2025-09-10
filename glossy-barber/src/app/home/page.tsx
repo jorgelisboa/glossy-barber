@@ -33,7 +33,7 @@ export default function LandingPage() {
             <div>Loading...</div>
           ) : user ? (
             <>
-              <p>{user.email}</p>
+              {/* <p>{user.email}</p> */}
               <Link href="/dashboard">
                 <Button variant="ghost">Dashboard</Button>
               </Link>
@@ -207,7 +207,7 @@ export default function LandingPage() {
                     <span>Backup automático e seguro</span>
                   </li>
                 </ul>
-                <CheckoutButton />
+                <CheckoutButton priceId="price_1Jxxxxxxxxxxxxxxxxxxxx" />
               </CardContent>
             </Card>
           </div>
