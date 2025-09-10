@@ -4,24 +4,13 @@ import { Button } from "@/components/ui/button";
 import { CheckoutButton } from "@/components/ui/CheckoutButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { Check, Scissors, CalendarDays, DollarSign, Cloud, Laptop, BarChartBig, MessageSquareText, CreditCard, TrendingDown, Repeat, Globe } from "lucide-react";
+import { Check, Scissors, CalendarDays, Cloud, Laptop, BarChartBig, MessageSquareText, CreditCard, TrendingDown, Repeat, Globe } from "lucide-react";
 
 import Link from 'next/link';
-import { useAuth } from '@/context/AuthContext';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import Header from '@/components/Header';
 
 
 export default function LandingPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/');
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       
@@ -51,6 +40,7 @@ export default function LandingPage() {
           )}
         </div>
       </header>
+      <Header />
 
       <main className="flex-grow">
         {/* Seção 1: Slogan (Hero) */}
