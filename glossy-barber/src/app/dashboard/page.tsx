@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { Appointment, Service } from '@/types';
 
 const getAppointmentFormSchema = (t: (key: string) => string) => z.object({
   serviceId: z.string().min(1, t('select_service_error')),
@@ -32,8 +33,8 @@ const DashboardPage = () => {
   const [dailyRevenue, setDailyRevenue] = useState(0);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [dailyAppointmentsCount, setDailyAppointmentsCount] = useState(0);
-  const [appointments, setAppointments] = useState([]);
-  const [services, setServices] = useState([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
   const [serviceName, setServiceName] = useState("");
@@ -182,7 +183,7 @@ const DashboardPage = () => {
     }
   }, [user]);
 
-  const handleOpenServiceEditDialog = (service) => {
+  const handleOpenServiceEditDialog = (service: Service) => {
     setEditingService(service);
     setServiceName(service.name);
     setServicePrice(service.price.toString());
@@ -588,4 +589,5 @@ const DashboardPage = () => {
   );
 }
 
+export default DashboardPage;
 export default DashboardPage;

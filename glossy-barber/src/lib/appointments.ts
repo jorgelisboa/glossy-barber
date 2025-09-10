@@ -1,11 +1,11 @@
-
 import { db } from './firebase';
 import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { Appointment } from '@/types';
 
 const appointmentsCollection = collection(db, 'appointments');
 
 // Create
-export const createAppointment = async (userId, appointmentData) => {
+export const createAppointment = async (userId: string, appointmentData: Omit<Appointment, 'id' | 'userId' | 'status'>) => {
   try {
     const docRef = await addDoc(appointmentsCollection, {
       userId,
@@ -19,13 +19,13 @@ export const createAppointment = async (userId, appointmentData) => {
 };
 
 // Read
-export const getAppointments = async (userId) => {
+export const getAppointments = async (userId: string) => {
   try {
     const q = query(appointmentsCollection, where('userId', '==', userId));
     const querySnapshot = await getDocs(q);
-    const appointments = [];
+    const appointments: Appointment[] = [];
     querySnapshot.forEach((doc) => {
-      appointments.push({ id: doc.id, ...doc.data() });
+      appointments.push({ id: doc.id, ...doc.data() } as Appointment);
     });
     return { appointments };
   } catch (error) {
@@ -34,7 +34,7 @@ export const getAppointments = async (userId) => {
 };
 
 // Update
-export const updateAppointment = async (appointmentId, appointmentData) => {
+export const updateAppointment = async (appointmentId: string, appointmentData: Partial<Omit<Appointment, 'id' | 'userId'>>) => {
   try {
     const appointmentDoc = doc(db, 'appointments', appointmentId);
     await updateDoc(appointmentDoc, appointmentData);
@@ -45,7 +45,7 @@ export const updateAppointment = async (appointmentId, appointmentData) => {
 };
 
 // Update Status
-export const updateAppointmentStatus = async (appointmentId, newStatus) => {
+export const updateAppointmentStatus = async (appointmentId: string, newStatus: string) => {
   try {
     const appointmentDoc = doc(db, 'appointments', appointmentId);
     await updateDoc(appointmentDoc, { status: newStatus });
@@ -56,7 +56,7 @@ export const updateAppointmentStatus = async (appointmentId, newStatus) => {
 };
 
 // Delete
-export const deleteAppointment = async (appointmentId) => {
+export const deleteAppointment = async (appointmentId: string) => {
   try {
     const appointmentDoc = doc(db, 'appointments', appointmentId);
     await deleteDoc(appointmentDoc);
